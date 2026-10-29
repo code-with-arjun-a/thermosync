@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Adaptive Thermostat Simulator</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap">
+<style>
+:root{--bg:#eef2f4;--card:#fff;--ink:#14232b;--mute:#5d6f78;--line:#d3dde2;--cool:#0e7c86;--heat:#d9531e;--warn:#b7791f;--floor:#f6f9fa;--pc:#2b6cb0;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e181d;--card:#152329;--ink:#e6eff2;--mute:#8da2ab;--line:#26383f;--cool:#3fc1cc;--heat:#ff8a50;--warn:#e9b44c;--floor:#101c21;--pc:#6aa8f0}}
+:root[data-theme="dark"]{--bg:#0e181d;--card:#152329;--ink:#e6eff2;--mute:#8da2ab;--line:#26383f;--cool:#3fc1cc;--heat:#ff8a50;--warn:#e9b44c;--floor:#101c21;--pc:#6aa8f0}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Manrope,system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:1080px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:clamp(26px,5vw,40px);line-height:1.1;margin:8px 0 6px;font-weight:800;letter-spacing:-.02em}
+h2{font-size:16px;margin:0 0 10px;font-weight:800}
+p.lead{color:var(--mute);max-width:64ch;margin:0 0 18px}
+.grid{display:grid;gap:14px;grid-template-columns:1fr}
+@media(min-width:860px){.grid{grid-template-columns:1.55fr 1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}
+.span{grid-column:1/-1}
+canvas{width:100%;display:block;border-radius:6px}
+.row{display:grid;grid-template-columns:1fr auto;gap:2px 10px;margin-bottom:10px;align-items:center}
+.row label{font-weight:600}.row output{font-variant-numeric:tabular-nums;color:var(--cool);font-weight:800}
+.row input{grid-column:1/-1;width:100%;accent-color:var(--cool)}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 2px}
+button{font:inherit;font-weight:600;border:1px solid var(--line);background:var(--floor);color:var(--ink);padding:7px 12px;border-radius:8px;cursor:pointer}
+button:hover{border-color:var(--cool)}button:focus-visible,input:focus-visible{outline:2px solid var(--cool);outline-offset:2px}
+button.on{background:var(--cool);color:var(--bg);border-color:var(--cool)}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.stat{background:var(--floor);border-radius:8px;padding:8px 10px}
+.stat b{display:block;font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+.stat span{color:var(--mute);font-size:12.5px}
+.heat{color:var(--heat)}.cool{color:var(--cool)}
+.pipe{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch}
+.node{flex:1 1 130px;border:1px solid var(--line);background:var(--floor);border-radius:8px;padding:8px 10px;transition:box-shadow .2s,border-color .2s}
+.node small{display:block;color:var(--mute);font-size:12px}
+.node.fl{border-color:var(--heat);box-shadow:0 0 0 3px color-mix(in srgb,var(--heat) 30%,transparent)}
+.node.ctl{flex-basis:100%;background:var(--card)}
+.log{height:190px;overflow:auto;background:var(--floor);border-radius:8px;padding:8px 10px;font:12.5px/1.55 ui-monospace,Menlo,Consolas,monospace}
+.log div{white-space:pre-wrap;word-break:break-word}.log .ir{color:var(--heat)}.log .arp{color:var(--pc)}.log .vis{color:var(--cool)}
+.formula{font:13.5px/1.7 ui-monospace,Menlo,Consolas,monospace;background:var(--floor);border-radius:8px;padding:10px 12px;overflow-x:auto;white-space:pre}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}td,th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:right}td:first-child,th:first-child{text-align:left}th{font-weight:600;color:var(--mute)}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12.5px;color:var(--mute);margin-top:6px}.legend i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:5px;border-radius:2px}
+.note{color:var(--mute);font-size:13px;margin:10px 0 0}
+.row{position:relative}.row label{cursor:help;text-decoration:underline dotted;text-underline-offset:3px;text-decoration-color:var(--mute)}
+.row small{display:none;position:absolute;left:0;right:0;top:calc(100% - 4px);z-index:5;pointer-events:none;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:12.5px;line-height:1.4;box-shadow:0 6px 18px rgba(0,0,0,.18)}
+.row:hover small,.row:focus-within small,.row.open small{display:block}
+.expl{margin-top:12px;font-size:13.5px;color:var(--mute)}.expl p{margin:0 0 8px}.expl b{color:var(--ink)}
+</style>
+</head>
+<body>
+<main>
+<h1>Adaptive thermostat simulator</h1>
+<p class="lead">Add people and active PCs to the room and watch the controller lower the AC setpoint before the air warms up. A thermostat that stays on at a fixed setpoint runs alongside for comparison.</p>
+
+<div class="grid">
+  <section class="card">
+    <h2>Room, top view</h2>
+    <canvas id="room" width="640" height="300" aria-label="Top view of the room with people crossing the door line and PCs on desks"></canvas>
+    <div class="legend"><span><i style="background:var(--cool)"></i>Person</span><span><i style="background:var(--pc)"></i>Active PC</span><span><i style="background:var(--heat)"></i>Virtual crossing line</span></div>
+    <div class="expl"><p><b>Outdoor term.</b> Hot air outside leaks into the room through walls, windows and the door. When this is on, the controller lowers the target a little more on hot days to make up for that leak. It adds nothing when it is cooler outside than the base setpoint.</p><p><b>Setback.</b> An empty room does not need to be kept cool. When this is on, the target rises to the empty-room setpoint, or to a milder value if PCs are on but nobody is there. As soon as someone enters, the controller cools the room again without waiting.</p></div>
+  </section>
+
+  <section class="card">
+    <h2>Controls</h2>
+    <div class="row"><label for="nh">Target occupancy</label><output id="nhO"></output><small>How many people you want in the room. They walk through the door and the camera line counts them.</small><input id="nh" type="range" min="0" max="40" value="6"></div>
+    <div class="row"><label for="nc">Active PCs on the subnet</label><output id="ncO"></output><small>How many PCs are switched on. Each adds about 180 W of heat and is found by the network scan.</small><input id="nc" type="range" min="0" max="40" value="8"></div>
+    <div class="row"><label for="vol">Room volume (m³)</label><output id="volO"></output><small>Size of the room. The same heat warms a smaller room faster.</small><input id="vol" type="range" min="40" max="300" step="5" value="100"></div>
+    <div class="row"><label for="tb">Base setpoint (°C)</label><output id="tbO"></output><small>The comfortable temperature the AC aims for when nothing adds extra heat.</small><input id="tb" type="range" min="22" max="27" step="0.5" value="24"></div>
+    <div class="row"><label for="hy">Hysteresis band (°C)</label><output id="hyO"></output><small>How far the new target must differ from the current setpoint before a command is sent. Stops constant small changes.</small><input id="hy" type="range" min="0.2" max="2" step="0.1" value="0.5"></div>
+    <div class="row"><label for="out">Outdoor temperature (°C)</label><output id="outO"></output><small>Temperature outside. Hotter air outside leaks more heat into the room.</small><input id="out" type="range" min="24" max="42" value="32"></div>
+    <div class="row"><label for="te">Empty-room setpoint (°C)</label><output id="teO"></output><small>Setpoint used when the room is empty and setback is on. Higher saves more energy.</small><input id="te" type="range" min="25" max="32" step="0.5" value="28"></div>
+    <div class="row"><label for="bs">Always-on baseline setpoint (°C)</label><output id="bsO"></output><small>Fixed setpoint of the comparison thermostat, which stays on all day.</small><input id="bs" type="range" min="18" max="26" step="0.5" value="22"></div>
+    <div class="row"><label for="cap">AC cooling capacity (kW)</label><output id="capO"></output><small>The most cooling the AC can deliver. If the heat is greater than this, the room warms up.</small><input id="cap" type="range" min="2" max="40" step="1" value="20"></div>
+    <div class="row"><label for="sp">Simulation speed</label><output id="spO"></output><small>How fast simulated time runs compared with real time.</small><input id="sp" type="range" min="10" max="400" step="10" value="120"></div>
+    <div class="btns">
+      <button id="pp">Pause</button><button id="ex" aria-pressed="false">Outdoor term: off</button><button id="sb" class="on" aria-pressed="true">Setback: on</button><button data-s="0,0">Empty room</button><button data-s="25,25">Lecture</button><button data-s="12,30">Full lab</button><button id="rs">Reset</button>
+    </div>
+  </section>
+
+  <section class="card span">
+    <h2>Temperature over the last hour of simulated time</h2>
+    <canvas id="chart" width="1000" height="440" aria-label="Chart of room temperature and AC setpoints"></canvas>
+    <div class="legend"><span><i style="background:var(--cool)"></i>Room temperature</span><span><i style="background:var(--warn)"></i>Target setpoint sent to the AC</span></div>
+  </section>
+
+  <section class="card">
+    <h2>Live calculation</h2>
+    <div class="stats">
+      <div class="stat"><b id="sN">0</b><span>People counted (N_h)</span></div>
+      <div class="stat"><b id="sC">0</b><span>Active PCs (N_c)</span></div>
+      <div class="stat"><b id="sQ" class="heat">0 W</b><span>Internal heat Q_internal</span></div>
+      <div class="stat"><b id="sD" class="heat">0.0 °C</b><span>Rise in 5 min with no cooling</span></div>
+      <div class="stat"><b id="sT" class="cool">24.0 °C</b><span>Computed target T_target</span></div>
+      <div class="stat"><b id="sA">24.0 °C</b><span>Setpoint sent to the AC</span></div>
+    </div>
+    <p class="note" id="sF"></p>
+  </section>
+
+  <section class="card">
+    <h2>Adaptive vs static</h2>
+    <table><tr><th></th><th>Adaptive</th><th>Always-on baseline</th></tr>
+    <tr><td>Room now</td><td id="tA">–</td><td id="tS">–</td></tr>
+    <tr><td>Peak temp</td><td id="pA">–</td><td id="pS">–</td></tr>
+    <tr><td>Average temp</td><td id="aA">–</td><td id="aS">–</td></tr>
+    <tr><td>Cooling energy</td><td id="eS">–</td><td id="eA">–</td></tr>
+    <tr><td>Extra energy vs adaptive</td><td id="sv">–</td><td>–</td></tr>
+    <tr><td>IR commands sent</td><td id="cA">0</td><td>0</td></tr></table>
+    <p class="note">Energy is the heat the AC removes, not the electricity used, so it ignores how efficient the real unit is. The baseline keeps the AC on at a fixed setpoint all day, which is the problem the project targets. The rise is simulated with a simple lumped model: air mass ×4 for furniture, a fixed envelope gain from outdoors, and a proportional AC.</p>
+  </section>
+
+  <section class="card span">
+    <h2>Data pipeline</h2>
+    <div class="pipe">
+      <div class="node" id="nV">Overhead camera<small>Line crossing → room/vision/occupancy</small></div>
+      <div class="node" id="nN">Network scanner<small>ARP sweep every 60 s</small></div>
+      <div class="node" id="nE">BME280 sensor<small>room/sensors/environment</small></div>
+      <div class="node ctl" id="nC"><b>Central controller (Raspberry Pi 4)</b><small>Mosquitto broker · heat balance · hysteresis with a 120 s lockout between commands</small></div>
+      <div class="node" id="nI">ESP32 IR actuator<small>room/actuator/ir/command → 38 kHz burst</small></div>
+      <div class="node" id="nA">AC compressor<small id="nAs">Idle</small></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Message log</h2>
+    <div class="log" id="log" role="log"></div>
+  </section>
+
+  <section class="card">
+    <h2>Model</h2>
+    <div class="formula">Q_internal = N_h·100 W + N_c·180 W
+ΔT = Δt·Q_internal / (ρ·C_p·V)     Δt = 300 s
+ρ·C_p ≈ 1210 J/(m³·°C)
+T_target = max(T_min, T_base − (24.8·N_h + 44.6·N_c) / V)
+T_min = 18 °C
+
+Outdoor term (toggle):
+T_target = max(T_min, T_base − [24.8·N_h + 44.6·N_c
+           + 0.248·U·max(0, T_out − T_base)] / V)     U = 150 W/°C
+
+Setback (toggle):
+N_h = 0 and N_c = 0   → T_target = empty-room setpoint
+N_h = 0, PCs on       → min(empty-room setpoint, T_base + 2)
+N_h > 0               → formula above, ignoring offsets under 1 °C</div>
+  </section>
+</div>
+</main>
+
+<script>
+(function(){
+var $=function(i){return document.getElementById(i)};
+var cs=function(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()};
+var P={nh:6,nc:8,vol:100,tb:24,hy:.5,out:32,sp:120,TMIN:18,U:150,cap:20,sb:true,te:28,bs:22,ext:false,paused:false};
+function cl(T,sp){return Math.min(P.cap*1000,Math.max(0,P.cap*250*(T-sp)))}
+var S;
+function fmt(t){var h=Math.floor(t/3600),m=Math.floor(t%3600/60),s=Math.floor(t%60);return (h<10?"0":"")+h+":"+(m<10?"0":"")+m+":"+(s<10?"0":"")+s}
+function reset(){S={t:0,Ta:P.tb,Ts:P.bs,spA:P.tb,spS:P.bs,last:-999,cmds:0,people:[],count:0,hist:[],pkA:P.tb,pkS:P.bs,sumA:0,sumS:0,n:0,eA:0,eS:0,nextScan:0,spawn:0,flash:{}};
+ $("log").innerHTML="";log("Controller started. Setpoint "+P.tb.toFixed(1)+" °C","");}
+function log(msg,c){var d=document.createElement("div");d.className=c||"";d.textContent=(S?fmt(S.t):"00:00:00")+"  "+msg;var L=$("log");L.appendChild(d);while(L.children.length>60)L.removeChild(L.firstChild);L.scrollTop=L.scrollHeight}
+function fl(id){var e=$(id);e.classList.add("fl");setTimeout(function(){e.classList.remove("fl")},350)}
+function envOff(){return P.ext?300*P.U*Math.max(0,P.out-P.tb)/(1210*P.vol):0}
+function target(){var off=(24.8*S.count+44.6*P.nc)/P.vol+envOff();
+ if(P.sb){if(S.count===0)return P.nc===0?P.te:Math.min(P.te,P.tb+2);if(off<1)off=0}
+ return Math.max(P.TMIN,P.tb-off)}
+function evaluate(){var tg=Math.round(target()*10)/10;
+ if(S.t-S.last<120&&!(S.count>0&&S.spA>tg+2))return;
+ if(Math.abs(tg-S.spA)>=P.hy){log("Setpoint "+S.spA.toFixed(1)+" → "+tg.toFixed(1)+" °C · IR cmd {power:ON, mode:COOL, target_temp:"+tg.toFixed(1)+"}","ir");
+  S.spA=tg;S.last=S.t;S.cmds++;fl("nC");fl("nI");fl("nA")}}
+// people: crossing line at x=70
+var LX=70,DY=150;
+function seatPos(i){return [150+(i%10)*46+13,40+Math.floor(i/10)*62+34]}
+function roam(p){if(p.row===undefined||Math.random()<.25)p.row=Math.floor(Math.random()*4);p.tx=150+Math.random()*440;p.ty=40+p.row*62+52}
+function assign(){var taken={},act=Math.min(40,P.nc);
+ S.people.forEach(function(p){if(p.st==="out")return;if(p.seat>=0&&p.seat<act&&!taken[p.seat])taken[p.seat]=1;else if(p.seat>=0)p.seat=-2});
+ S.people.forEach(function(p){if(p.st==="out"||p.seat>=0)return;
+  var s=-1;for(var i=0;i<act;i++)if(!taken[i]){s=i;break}
+  if(s>=0){taken[s]=1;p.seat=s;var q=seatPos(s);p.tx=q[0];p.ty=q[1]}
+  else if(p.seat!==-1){p.seat=-1;roam(p);p.w=0}})}
+function addPerson(){S.people.push({x:-10,y:DY,tx:150,ty:DY,st:"in",c:false,seat:-2})}
+function step(dt){ // dt real seconds
+ var sim=dt*P.sp;S.t+=sim;
+ // occupancy sync
+ S.spawn-=dt;
+ if(S.spawn<=0){var inside=S.people.filter(function(p){return p.st!=="out"}).length;
+  if(inside<P.nh){addPerson(true);S.spawn=.2}
+  else if(inside>P.nh){var c=S.people.filter(function(p){return p.st==="here"});if(c.length){var rm=c.filter(function(p){return p.seat<0}),pool=rm.length?rm:c,p=pool[Math.floor(Math.random()*pool.length)];p.st="out";p.c=false;p.seat=-3;p.tx=-20;p.ty=DY;S.spawn=.2}}}
+ assign();S.people.forEach(function(p){var dx=p.tx-p.x,dy=p.ty-p.y,d=Math.hypot(dx,dy),v=110*dt;
+  if(d<v){p.x=p.tx;p.y=p.ty;if(p.st==="in")p.st="here";if(p.st==="here"&&p.seat<0){p.w=(p.w||0)-dt;if(p.w<=0){roam(p);p.w=1+Math.random()*2}}}else{p.x+=dx/d*v;p.y+=dy/d*v}
+  if(p.st==="in"&&!p.c&&p.x>LX){p.c=true;S.count++;log("ENTRY  human_count="+S.count,"vis");fl("nV");evaluate()}
+  if(p.st==="out"&&!p.c&&p.x<LX){p.c=true;S.count=Math.max(0,S.count-1);log("EXIT   human_count="+S.count,"vis");fl("nV");evaluate()}});
+ S.people=S.people.filter(function(p){return !(p.st==="out"&&p.x<=-19)});
+ // ARP sweep & periodic control
+ while(S.t>=S.nextScan){S.nextScan+=60;log("ARP sweep 192.168.1.0/24 → "+P.nc+" active PCs","arp");fl("nN");fl("nE");evaluate()}
+ // thermal model, sub-steps of 5 s
+ var n=Math.max(1,Math.ceil(sim/5)),h=sim/n,C=1210*P.vol*4;
+ for(var i=0;i<n;i++){
+  var q=S.count*100+P.nc*180;
+  S.Ta=adv(S.Ta,S.spA,q,h,C,"eA");S.Ts=adv(S.Ts,P.bs,q,h,C,"eS")}
+ var cooling=cl(S.Ta,S.spA);$("nAs").textContent=cooling>50?(cooling>=P.cap*990?"At full capacity, ":"Cooling ")+Math.round(cooling)+" W":"Idle";
+ S.pkA=Math.max(S.pkA,S.Ta);S.pkS=Math.max(S.pkS,S.Ts);S.sumA+=S.Ta;S.sumS+=S.Ts;S.n++;
+ if(!S.lastH||S.t-S.lastH>=10){S.lastH=S.t;S.hist.push([S.t,S.Ta,S.Ts,S.spA,S.spS]);if(S.hist.length>360)S.hist.shift()}
+}
+function adv(T,sp,q,h,C,k){var cool=cl(T,sp);S[k]+=cool*h/3.6e6;return T+(q+150*(P.out-T)-cool)*h/C}
+// drawing
+function drawRoom(){var c=$("room"),g=c.getContext("2d"),W=c.width,H=c.height;g.clearRect(0,0,W,H);
+ g.fillStyle=cs("--floor");g.fillRect(0,0,W,H);
+ var warm=Math.max(0,Math.min(1,(S.Ta-22)/8));g.fillStyle="rgba(217,83,30,"+(warm*.22).toFixed(3)+")";g.fillRect(0,0,W,H);
+ g.strokeStyle=cs("--line");g.lineWidth=4;g.strokeRect(2,2,W-4,H-4);
+ g.clearRect(0,DY-24,6,48);g.fillStyle=cs("--mute");g.font="600 12px Manrope,sans-serif";g.fillText("Door",10,DY-30);
+ g.strokeStyle=cs("--heat");g.setLineDash([6,5]);g.lineWidth=2;g.beginPath();g.moveTo(LX,10);g.lineTo(LX,H-10);g.stroke();g.setLineDash([]);
+ g.fillStyle=cs("--heat");g.fillText("Count "+S.count,LX+6,22);
+ // desks (grid of 40 PC slots)
+ var cols=10,pc=cs("--pc");
+ for(var i=0;i<40;i++){var x=150+(i%cols)*46,y=40+Math.floor(i/cols)*62,on=i<P.nc;
+  g.fillStyle=on?pc:cs("--line");g.globalAlpha=on?1:.55;g.fillRect(x,y,26,18);g.globalAlpha=1;
+  if(on){g.shadowColor=pc;g.shadowBlur=8;g.fillRect(x+8,y+20,10,3);g.shadowBlur=0}}
+ S.people.forEach(function(p){g.fillStyle=cs("--cool");g.beginPath();g.arc(p.x,p.y,7,0,6.283);g.fill();g.strokeStyle=cs("--bg");g.lineWidth=1.5;g.stroke()});
+ var sd=S.people.filter(function(p){return p.seat>=0&&p.st!=="out"}).length,rmN=S.people.filter(function(p){return p.seat<0&&p.st==="here"}).length;
+ g.fillStyle=cs("--mute");g.font="600 12px Manrope,sans-serif";g.fillText("Seated "+sd+", roaming "+rmN,14,H-14);
+ g.font="800 18px Manrope,sans-serif";g.textAlign="right";var tt="Target "+S.spA.toFixed(1)+" °C";g.fillStyle=cs("--cool");g.fillText(tt,W-14,24);g.fillStyle=cs("--ink");g.fillText("Room "+S.Ta.toFixed(1)+" °C",W-14-g.measureText(tt).width-22,24);g.textAlign="left"}
+function drawChart(){var c=$("chart"),g=c.getContext("2d"),W=c.width,H=c.height,m={l:44,r:12,t:12,b:24};g.clearRect(0,0,W,H);
+ var lo=16,hi=32;S.hist.forEach(function(r){[1,3].forEach(function(k){lo=Math.min(lo,r[k]);hi=Math.max(hi,r[k])})});
+ lo=Math.floor((lo-.5)/2)*2;hi=Math.ceil((hi+.5)/2)*2;var st=(hi-lo)>=16?4:2;
+ function Y(v){return m.t+(hi-v)/(hi-lo)*(H-m.t-m.b)}
+ g.font="16px Manrope,sans-serif";g.fillStyle=cs("--mute");g.strokeStyle=cs("--line");g.lineWidth=1;
+ for(var v=lo;v<=hi;v+=st){g.beginPath();g.moveTo(m.l,Y(v));g.lineTo(W-m.r,Y(v));g.stroke();g.fillText(v+"°",8,Y(v)+4)}
+ var h=S.hist;if(h.length<2){g.fillText("Waiting for data…",m.l+10,H/2);return}
+ var t0=Math.max(0,h[h.length-1][0]-3600),t1=Math.max(3600,h[h.length-1][0]);
+ function X(t){return m.l+(t-t0)/(t1-t0)*(W-m.l-m.r)}
+ g.fillText(fmt(t0).slice(0,5),m.l,H-6);g.textAlign="right";g.fillText(fmt(t1).slice(0,5),W-m.r,H-6);g.textAlign="left";
+ [[1,"--cool",2.5,[]],[3,"--warn",2,[]]].forEach(function(s){
+  g.beginPath();g.strokeStyle=cs(s[1]);g.lineWidth=s[2];g.setLineDash(s[3]);
+  h.forEach(function(r,i){var x=X(r[0]),y=Y(r[s[0]]);i?g.lineTo(x,y):g.moveTo(x,y)});g.stroke()});g.setLineDash([])}
+function readouts(){var q=S.count*100+P.nc*180,d=300*q/(1210*P.vol),tg=target();
+ $("sN").textContent=S.count;$("sC").textContent=P.nc;$("sQ").textContent=q+" W";$("sD").textContent=d.toFixed(1)+" °C";
+ $("sT").textContent=tg.toFixed(1)+" °C";$("sA").textContent=S.spA.toFixed(1)+" °C";
+ $("sF").textContent="T_target = max(18, "+P.tb.toFixed(1)+" − (24.8×"+S.count+" + 44.6×"+P.nc+") / "+P.vol+(P.ext?" − envelope "+envOff().toFixed(1):"")+") = "+tg.toFixed(1)+" °C. "+(P.ext?"The envelope term is 0.248·U·max(0, T_out − T_base) / V with U = "+P.U+" W/°C. ":"The outdoor term is off, so this is the original formula. ")+"The AC only changes when this differs from the current setpoint by at least "+P.hy.toFixed(1)+" °C.";
+ if(P.sb&&S.count===0)$("sF").textContent="Setback active: "+(P.nc===0?"the room is empty and no PCs are on":"nobody is present but PCs are still on")+", so the target is "+tg.toFixed(1)+" °C to save energy. The AC pre-cools as soon as someone enters.";
+ var n=Math.max(1,S.n);$("tA").textContent=S.Ta.toFixed(1)+" °C";$("tS").textContent=S.Ts.toFixed(1)+" °C";
+ $("pA").textContent=S.pkA.toFixed(1)+" °C";$("pS").textContent=S.pkS.toFixed(1)+" °C";
+ $("aA").textContent=(S.sumA/n).toFixed(1)+" °C";$("aS").textContent=(S.sumS/n).toFixed(1)+" °C";
+ $("eA").textContent=S.eA.toFixed(2)+" kWh";$("eS").textContent=S.eS.toFixed(2)+" kWh";$("sv").textContent=S.eA>.05?(S.eS-S.eA).toFixed(2)+" kWh ("+Math.round((S.eS-S.eA)/S.eA*100)+" %)":"–";$("cA").textContent=S.cmds}
+// bindings
+var fm={nh:function(v){return v},nc:function(v){return v},vol:function(v){return v+" m³"},tb:function(v){return (+v).toFixed(1)+" °C"},hy:function(v){return (+v).toFixed(1)+" °C"},out:function(v){return v+" °C"},sp:function(v){return v+"×"},cap:function(v){return v+" kW"},te:function(v){return (+v).toFixed(1)+" °C"},bs:function(v){return (+v).toFixed(1)+" °C"}};
+Object.keys(fm).forEach(function(k){var el=$(k);function up(){P[k]=+el.value;$(k+"O").textContent=fm[k](el.value);if(k==="nc"&&S){log("Network change → "+P.nc+" active PCs","arp");}if(S&&(k==="tb"||k==="vol"||k==="nc"||k==="out"||k==="te")){S.nextScan=Math.min(S.nextScan,S.t+1)}}
+ el.addEventListener("input",up);up()});
+$("pp").onclick=function(){P.paused=!P.paused;this.textContent=P.paused?"Resume":"Pause";this.classList.toggle("on",P.paused)};
+$("rs").onclick=function(){reset()};
+$("sb").onclick=function(){P.sb=!P.sb;this.textContent="Setback: "+(P.sb?"on":"off");this.classList.toggle("on",P.sb);this.setAttribute("aria-pressed",P.sb);log("Setback "+(P.sb?"enabled":"disabled")+" → target "+target().toFixed(1)+" °C","");S.nextScan=Math.min(S.nextScan,S.t+1)};
+$("ex").onclick=function(){P.ext=!P.ext;this.textContent="Outdoor term: "+(P.ext?"on":"off");this.classList.toggle("on",P.ext);this.setAttribute("aria-pressed",P.ext);log("Outdoor term "+(P.ext?"enabled":"disabled")+" → target "+target().toFixed(1)+" °C","");S.nextScan=Math.min(S.nextScan,S.t+1)};
+document.querySelectorAll("button[data-s]").forEach(function(b){b.onclick=function(){var a=b.dataset.s.split(",");$("nh").value=a[0];$("nc").value=a[1];$("nh").dispatchEvent(new Event("input"));$("nc").dispatchEvent(new Event("input"))}});
+document.querySelectorAll(".row label").forEach(function(l){l.addEventListener("click",function(){var r=l.parentNode,o=r.classList.contains("open");document.querySelectorAll(".row.open").forEach(function(x){x.classList.remove("open")});if(!o)r.classList.add("open")})});
+reset();var prev=performance.now();
+function loop(now){var dt=Math.min(.1,(now-prev)/1000);prev=now;if(!P.paused)step(dt);drawRoom();drawChart();readouts();requestAnimationFrame(loop)}
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
